@@ -347,12 +347,14 @@ document.addEventListener("DOMContentLoaded", function(){
 
 <script>
 /* ============================================================
-   PUBLIC DOWNLOADER API
-   No RapidAPI key or subscription required.
-   Uses @satorufx/mediadownloader -> api.satoru.click
-   for supported public social-media URLs.
+   FFX 1.0 DOWNLOADER API
+   TikTok: TikWM public API
+   Facebook: FFX backend API
    ============================================================ */
-const PUBLIC_DOWNLOADER_PACKAGE = "https://esm.sh/@satorufx/mediadownloader@1.1.0";
+
+const TIKTOK_API = "https://www.tikwm.com/api/";
+const FB_API_BASE = "https://ff-ii-5uzh.onrender.com";
+const FB_API_PATH = "/api/download";
 
 let platform = "facebook";
 
@@ -360,18 +362,10 @@ function switchPlatform(name){
   platform = name;
   document.getElementById("fbTab").classList.toggle("active", name === "facebook");
   document.getElementById("ttTab").classList.toggle("active", name === "tiktok");
-
   const input = document.getElementById("urlInput");
   const label = document.getElementById("inputLabel");
-
-  if(name === "facebook"){
-    label.textContent = "Video URL";
-    input.placeholder = "Paste your Facebook video or Reel link";
-  }else{
-    label.textContent = "TikTok video URL";
-    input.placeholder = "Paste your TikTok video link";
-  }
-
+  if(name === "facebook"){ label.textContent = "Video URL"; input.placeholder = "Paste your Facebook video or Reel link"; }
+  else { label.textContent = "TikTok video URL"; input.placeholder = "Paste your TikTok video link"; }
   resetResult();
 }
 
@@ -397,85 +391,27 @@ function showStatus(message, type="info"){
 }
 
 function isValidUrl(value){
-  try{
-    const u = new URL(value);
-    return u.protocol === "http:" || u.protocol === "https:";
-  }catch(e){ return false; }
+  try{ const u = new URL(value); return u.protocol === "http:" || u.protocol === "https:"; }
+  catch(e){ return false; }
 }
 
-function findUrlsDeep(obj, found=[]){
-  if(obj == null) return found;
-
-  if(typeof obj === "string"){
-    if(/^https?:\/\//i.test(obj)) found.push(obj);
-    return found;
-  }
-
-  if(Array.isArray(obj)){
-    obj.forEach(v => findUrlsDeep(v, found));
-    return found;
-  }
-
-  if(typeof obj === "object"){
-    for(const [key, value] of Object.entries(obj)){
-      const k = key.toLowerCase();
-      if(typeof value === "string" && /^https?:\/\//i.test(value)){
-        found.push({key:k, url:value});
-      }else{
-        findUrlsDeep(value, found);
-      }
-    }
-  }
-  return found;
-}
-
-function getBestFacebookLinks(data){
-  const priority = ["hd","high","hd_url","hdurl","download","download_url","video","video_url","sd","sd_url","sdurl","low"];
-  const items = findUrlsDeep(data, []);
-  const normalized = items.map(x => typeof x === "string" ? {key:"url",url:x} : x);
-
-  const unique = [];
-  const seen = new Set();
-  normalized.forEach(x => {
-    if(x.url && !seen.has(x.url)){
-      seen.add(x.url);
-      unique.push(x);
-    }
-  });
-
-  unique.sort((a,b) => {
-    const ai = priority.indexOf(a.key);
-    const bi = priority.indexOf(b.key);
-    return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
-  });
-
-  return unique;
+function getProxyDownloadUrl(mediaUrl, ext="mp4", filename="AURA-LABIB-Video"){
+  return `${FB_API_BASE}${FB_API_PATH}?url=${encodeURIComponent(mediaUrl)}&ext=${encodeURIComponent(ext)}&filename=${encodeURIComponent(filename)}`;
 }
 
 async function downloadVideo(){
   resetResult();
-
   const url = document.getElementById("urlInput").value.trim();
   const btn = document.getElementById("downloadBtn");
 
-  if(!url){
-    showStatus("Please paste a video URL first.","error");
-    return;
-  }
-
-  if(!isValidUrl(url)){
-    showStatus("Please enter a valid http/https video URL.","error");
-    return;
-  }
+  if(!url){ showStatus("Please paste a video URL first.","error"); return; }
+  if(!isValidUrl(url)){ showStatus("Please enter a valid http/https video URL.","error"); return; }
 
   if(platform === "tiktok" && !/(^|\.)tiktok\.com\b|(^|\.)vm\.tiktok\.com\b|(^|\.)vt\.tiktok\.com\b/i.test(url)){
-    showStatus("This does not look like a TikTok URL.","error");
-    return;
+    showStatus("This does not look like a TikTok URL.","error"); return;
   }
-
   if(platform === "facebook" && !/(^|\.)facebook\.com\b|(^|\.)fb\.watch\b|(^|\.)fb\.com\b/i.test(url)){
-    showStatus("This does not look like a Facebook URL.","error");
-    return;
+    showStatus("This does not look like a Facebook URL.","error"); return;
   }
 
   btn.disabled = true;
@@ -483,153 +419,63 @@ async function downloadVideo(){
   showStatus("Fetching the video download information…","info");
 
   try{
-    // Public, key-free API client. It supports TikTok and Facebook among
-    // many other public social-media URLs and returns a normalized result.
-    const { download } = await import(PUBLIC_DOWNLOADER_PACKAGE);
-    const data = await download(url, {
-      quality: "best",
-      resolve: true,
-      timeout: 60000
-    });
+    let downloadUrl = null;
 
-    if(!data || data.ok === false){
-      throw new Error(data?.error || "The public downloader API could not process this URL.");
+    if(platform === "tiktok"){
+      const res = await fetch(TIKTOK_API + "?url=" + encodeURIComponent(url));
+      if(!res.ok) throw new Error("TikTok API request failed (" + res.status + ").");
+      const responseData = await res.json();
+      if(responseData.code !== 0) throw new Error(responseData.msg || "TikTok API could not process this link.");
+      const data = responseData.data || {};
+      const mediaUrl = data.hdplay || data.play;
+      if(!mediaUrl) throw new Error("TikTok API returned no downloadable video URL.");
+      downloadUrl = getProxyDownloadUrl(mediaUrl, "mp4", "AURA-LABIB-TikTok-Video");
+    }else{
+      const res = await fetch(FB_API_BASE + FB_API_PATH, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || data.detail || "Facebook API request failed.");
+      if(data.error) throw new Error(data.error);
+      if(data.detail) throw new Error(data.detail);
+      const mediaUrl = data.hdplay || data.play;
+      if(!mediaUrl) throw new Error("Facebook API returned no downloadable video URL.");
+      downloadUrl = getProxyDownloadUrl(mediaUrl, "mp4", "AURA-LABIB-Facebook-Video");
     }
 
-    const downloadUrl = data.video || data.media?.find(m => m && m.type === "video" && m.url)?.url;
-
-    if(!downloadUrl){
-      console.log("Public downloader response:", data);
-      throw new Error("No video download URL was returned for this public video.");
-    }
-
-    const title = platform === "tiktok" ? "TikTok Video Ready" : "Facebook Video Ready";
-    showResult(
-      title,
-      "Your download link is ready.",
-      downloadUrl,
-      "Download Video"
-    );
+    showResult(platform === "tiktok" ? "TikTok Video Ready" : "Facebook Video Ready", "Your download link is ready.", downloadUrl, "Download Video");
   }catch(error){
-    console.error(error);
-    let friendly = error?.message || "Unknown error";
-
-    if(error?.code === "RATE_LIMITED" || /rate.?limit|429/i.test(friendly)){
-      friendly = "The free public API is temporarily rate-limited. Please wait a little and try again.";
-    }else if(error?.code === "TIMEOUT" || /timeout/i.test(friendly)){
-      friendly = "The video took too long to process. Please try again.";
-    }else if(error?.code === "NO_MEDIA" || /no media|no.*download/i.test(friendly)){
-      friendly = "No downloadable video was found. Make sure the post is public and the link is valid.";
-    }
-
-    showStatus(
-      "❌ <b>Could not get the download link.</b><br>" +
-      escapeHtml(friendly) +
-      "<br><br>Only public/accessible videos are supported.",
-      "error"
-    );
+    console.error("Downloader API error:", error);
+    let friendly = error?.message || "Unknown error.";
+    if(/failed to fetch|network|load failed|cors/i.test(friendly)) friendly = "The downloader server could not be reached right now. Please try again.";
+    else if(/timeout/i.test(friendly)) friendly = "The video took too long to process. Please try again.";
+    else if(/private|login|permission|access/i.test(friendly)) friendly = "This video may be private or require access. Only public/accessible videos are supported.";
+    showStatus("❌ <b>Could not get the download link.</b><br>" + escapeHtml(friendly) + "<br><br>Only public/accessible videos are supported.", "error");
   }finally{
     btn.disabled = false;
     btn.textContent = "Generate Download Link";
   }
 }
 
-function renderTikTokResult(data){
-  let downloadUrl = null;
-
-  if(typeof data === "object"){
-    downloadUrl =
-      data.downloadUrl ||
-      data.download_url ||
-      data.url ||
-      data.data?.downloadUrl ||
-      data.data?.download_url ||
-      data.data?.url ||
-      data.video?.downloadUrl ||
-      data.video?.download_url ||
-      data.video?.url ||
-      null;
-  }
-
-  if(!downloadUrl && typeof data === "string" && /^https?:\/\//i.test(data)){
-    downloadUrl = data;
-  }
-
-  if(!downloadUrl){
-    console.log("TikTok API response:", data);
-    throw new Error("TikTok API returned no downloadUrl.");
-  }
-
-  showResult(
-    "TikTok Video Ready",
-    "Your download link is ready.",
-    downloadUrl,
-    "Download Video"
-  );
-}
-
-function renderFacebookResult(data){
-  const links = getBestFacebookLinks(data);
-  if(!links.length){
-    console.log("Facebook API response:", data);
-    throw new Error("No video/download URL was found in the Facebook API response.");
-  }
-
-  const result = document.getElementById("result");
-  result.className = "result show";
-
-  let html = "<h3>Facebook Video Ready</h3><p>Select an available quality below.</p>";
-
-  const shown = links.slice(0,6);
-  shown.forEach((item,index) => {
-    const label = prettyQuality(item.key, index);
-    html += `<a class="download" style="margin-top:9px" target="_blank" rel="noopener" href="${escapeAttr(item.url)}">${escapeHtml(label)}</a>`;
-  });
-
-  html += `<button class="secondary" onclick="copyLink('${escapeJs(shown[0].url)}')">Copy Download Link</button>`;
-  result.innerHTML = html;
-  showStatus("✅ Download link generated.","info");
-}
-
-function prettyQuality(key,index){
-  const k = String(key || "").toLowerCase();
-  if(k.includes("hd") || k.includes("high")) return "⬇ Download HD";
-  if(k.includes("sd") || k.includes("low")) return "⬇ Download SD";
-  return index === 0 ? "⬇ Download Video" : "⬇ Download Option " + (index+1);
-}
-
 function showResult(title, desc, url, buttonText){
   const result = document.getElementById("result");
   result.className = "result show";
-  result.innerHTML = `
-    <h3>${escapeHtml(title)}</h3>
-    <p>${escapeHtml(desc)}</p>
-    <a class="download" target="_blank" rel="noopener" href="${escapeAttr(url)}">${escapeHtml(buttonText)}</a>
-    <button class="secondary" onclick="copyLink('${escapeJs(url)}')">Copy Download Link</button>
-  `;
+  result.innerHTML = `<h3>${escapeHtml(title)}</h3><p>${escapeHtml(desc)}</p><a class="download" target="_blank" rel="noopener" href="${escapeAttr(url)}">${escapeHtml(buttonText)}</a><button class="secondary" onclick="copyLink('${escapeJs(url)}')">Copy Download Link</button>`;
   showStatus("✅ Download link generated.","info");
 }
 
 async function copyLink(url){
-  try{
-    await navigator.clipboard.writeText(url);
-    showStatus("✅ Download link copied to clipboard.","info");
-  }catch(e){
-    showStatus("Copy failed. Long-press the download link and copy it manually.","error");
-  }
+  try{ await navigator.clipboard.writeText(url); showStatus("✅ Download link copied to clipboard.","info"); }
+  catch(e){ showStatus("Copy failed. Long-press the download link and copy it manually.","error"); }
 }
 
 function escapeHtml(value){
-  return String(value ?? "").replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[c]));
+  return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
-function escapeAttr(value){
-  return escapeHtml(value).replace(/`/g,"&#96;");
-}
-function escapeJs(value){
-  return String(value ?? "").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\r?\n/g," ");
-}
+function escapeAttr(value){ return escapeHtml(value).replace(/`/g,"&#96;"); }
+function escapeJs(value){ return String(value ?? "").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\r?\n/g," "); }
 </script>
 </body>
 </html>
