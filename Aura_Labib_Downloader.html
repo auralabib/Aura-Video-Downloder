@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURA LABIB — Video Downloader</title>
+  <meta name="description" content="AURA LABIB Facebook and TikTok video downloader">
+  
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#05060a;
+      --panel:rgba(14,16,24,.82);
+      --panel-2:#0b0d13;
+      --line:rgba(255,255,255,.085);
+      --line-soft:rgba(255,255,255,.055);
+      --text:#f8f8fb;
+      --muted:#85899a;
+      --violet:#7c5cff;
+      --violet-2:#a78bfa;
+      --pink:#e65cff;
+      --green:#36d98b;
+    }
+    html{scroll-behavior:smooth}
+    body{
+      min-height:100vh;
+      color:var(--text);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:
+        radial-gradient(900px 500px at 50% -180px,rgba(124,92,255,.24),transparent 65%),
+        radial-gradient(650px 420px at 100% 45%,rgba(230,92,255,.09),transparent 68%),
+        linear-gradient(180deg,#07080d 0%,#05060a 100%);
+      overflow-x:hidden;
+    }
+    body:before{
+      content:"";
+      position:fixed;inset:0;pointer-events:none;opacity:.22;
+      background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+                       linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+      background-size:46px 46px;
+      mask-image:linear-gradient(to bottom,#000,transparent 78%);
+    }
+    .wrap{width:min(900px,92%);margin:auto;padding:24px 0 42px;position:relative}
+    .hero{text-align:center;padding:16px 0 28px}
+    .brand-mark{
+      position:relative;width:82px;height:82px;margin:0 auto 14px;
+      padding:3px;border-radius:25px;
+      background:linear-gradient(135deg,#8b5cf6,#e879f9);
+      box-shadow:0 18px 55px rgba(124,92,255,.24);
+    }
+    .brand-mark .avatar{
+      width:100%;height:100%;display:block;border-radius:22px;object-fit:cover;
+      border:2px solid #080910;
+    }
+    .verified{
+      position:absolute;right:-5px;bottom:-5px;width:24px;height:24px;border-radius:50%;
+      display:grid;place-items:center;background:#7c5cff;border:3px solid #07080d;
+      color:#fff;font-size:11px;font-weight:900;box-shadow:0 5px 18px rgba(124,92,255,.4)
+    }
+    .eyebrow{
+      font-size:10px;letter-spacing:4px;font-weight:900;color:#a99cff;margin-bottom:8px
+    }
+    .hero h1{
+      font-size:clamp(34px,7vw,50px);line-height:1.02;letter-spacing:-2px;font-weight:900;
+      background:linear-gradient(100deg,#fff 20%,#d8d0ff 55%,#eaa7ff);
+      -webkit-background-clip:text;background-clip:text;color:transparent;
+    }
+    .hero-copy{
+      max-width:560px;margin:11px auto 0;color:#888c9d;font-size:14px;line-height:1.65
+    }
+    .card{
+      position:relative;background:linear-gradient(180deg,rgba(18,20,29,.92),rgba(10,12,18,.92));
+      border:1px solid var(--line);border-radius:26px;padding:18px;
+      box-shadow:0 28px 90px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.035);
+      backdrop-filter:blur(22px);overflow:hidden;
+    }
+    .card:before{
+      content:"";position:absolute;left:10%;right:10%;top:-1px;height:1px;
+      background:linear-gradient(90deg,transparent,rgba(167,139,250,.7),transparent);
+    }
+    .tabs{
+      display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:20px;
+      padding:5px;background:#080a10;border:1px solid var(--line-soft);border-radius:16px
+    }
+    .tab{
+      border:0;background:transparent;color:#777b8d;border-radius:11px;padding:13px 12px;
+      font-weight:800;font-size:14px;cursor:pointer;transition:.22s ease;
+    }
+    .tab span{font-size:17px;margin-right:5px;vertical-align:-1px}
+    .tab:hover{color:#c9c6d5;background:rgba(255,255,255,.035)}
+    .tab.active{
+      color:#fff;background:linear-gradient(135deg,rgba(124,92,255,.95),rgba(176,74,255,.88));
+      box-shadow:0 8px 24px rgba(124,92,255,.22)
+    }
+    .label{
+      display:flex;align-items:center;gap:7px;font-size:11px;text-transform:uppercase;
+      letter-spacing:1.3px;color:#8e92a4;font-weight:900;margin:0 0 9px 3px
+    }
+    .label:before{
+      content:"";width:5px;height:5px;border-radius:50%;background:#8b78ff;box-shadow:0 0 10px #8b78ff
+    }
+    .inputrow{display:flex;gap:9px}
+    input{
+      width:100%;min-width:0;height:54px;border:1px solid var(--line);outline:none;
+      background:#080a10;color:#fff;border-radius:14px;padding:0 16px;font-size:14px;
+      transition:.2s;box-shadow:inset 0 1px 0 rgba(255,255,255,.02)
+    }
+    input::placeholder{color:#5f6373}
+    input:focus{
+      border-color:rgba(139,116,255,.72);
+      box-shadow:0 0 0 4px rgba(124,92,255,.09),inset 0 1px 0 rgba(255,255,255,.02)
+    }
+    .clear{
+      flex:0 0 54px;width:54px;height:54px;border:1px solid var(--line);
+      background:#0b0d13;color:#777b8a;border-radius:14px;cursor:pointer;font-size:21px;
+      transition:.2s
+    }
+    .clear:hover{color:#fff;background:#11131c;border-color:rgba(255,255,255,.15)}
+    .action{
+      width:100%;height:54px;margin-top:11px;border:1px solid rgba(255,255,255,.08);
+      border-radius:14px;color:#fff;font-weight:900;font-size:14px;letter-spacing:.1px;
+      cursor:pointer;background:linear-gradient(135deg,#7658ff,#a64cff);
+      box-shadow:0 12px 32px rgba(108,75,255,.22);transition:.2s
+    }
+    .action:hover{transform:translateY(-1px);box-shadow:0 16px 38px rgba(108,75,255,.3)}
+    .action:active{transform:translateY(0)}
+    .action:disabled{opacity:.55;cursor:not-allowed;transform:none}
+    .status{
+      display:none;margin-top:13px;padding:12px 14px;border-radius:13px;font-size:12px;line-height:1.55
+    }
+    .status.show{display:block}
+    .status.error{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.18);color:#fca5a5}
+    .status.info{background:rgba(124,92,255,.07);border:1px solid rgba(124,92,255,.17);color:#c9c0ff}
+    .result{
+      display:none;margin-top:13px;border:1px solid var(--line);border-radius:17px;padding:15px;
+      background:linear-gradient(180deg,#0d1017,#090b10);box-shadow:inset 0 1px 0 rgba(255,255,255,.025)
+    }
+    .result.show{display:block}
+    .result h3{font-size:15px;margin-bottom:5px}
+    .result p{color:#777b8c;font-size:12px;margin-bottom:11px}
+    .download{
+      display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;
+      min-height:47px;background:linear-gradient(135deg,#2fd58b,#27bd78);color:#03140c;
+      border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:12px;font-weight:900;font-size:13px;
+      box-shadow:0 9px 25px rgba(39,189,120,.13)
+    }
+    .secondary{
+      width:100%;margin-top:8px;min-height:42px;padding:10px;border-radius:12px;
+      border:1px solid var(--line);background:#0d1017;color:#aeb1bf;font-size:12px;
+      font-weight:800;cursor:pointer
+    }
+    .secondary:hover{color:#fff;border-color:rgba(255,255,255,.14)}
+    .spinner{
+      display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.3);
+      border-top-color:#fff;border-radius:50%;vertical-align:-3px;margin-right:7px;animation:spin .7s linear infinite
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .trust-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:10px}
+    .trust-card{
+      min-height:72px;padding:13px 14px;border:1px solid var(--line-soft);border-radius:15px;
+      background:rgba(10,12,18,.72);box-shadow:inset 0 1px 0 rgba(255,255,255,.02)
+    }
+    .trust-card b{display:block;font-size:12px;color:#d7d8e1;margin-bottom:5px}
+    .trust-card span{display:block;color:#676b7b;font-size:10px;line-height:1.45}
+    footer{text-align:center;color:#505463;font-size:10px;margin-top:20px;line-height:1.7}
+    footer strong{color:#8e82dc;letter-spacing:1px}
+    @media(max-width:620px){
+      .wrap{width:min(94%,900px);padding-top:15px}
+      .hero{padding-bottom:22px}
+      .brand-mark{width:74px;height:74px;border-radius:22px}
+      .brand-mark .avatar{border-radius:19px}
+      .hero h1{font-size:35px}
+      .hero-copy{font-size:13px;padding:0 10px}
+      .card{padding:13px;border-radius:21px}
+      .tabs{margin-bottom:17px}
+      .trust-row{grid-template-columns:1fr}
+      .trust-card{min-height:auto}
+    }
+
+    .owner-card{
+      margin-top:13px;padding:15px;display:flex;align-items:center;gap:13px;
+      border:1px solid var(--line);border-radius:18px;
+      background:linear-gradient(135deg,rgba(17,19,28,.94),rgba(9,11,16,.94));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.025)
+    }
+    .owner-avatar-wrap{
+      width:48px;height:48px;flex:0 0 48px;padding:2px;border-radius:15px;
+      background:linear-gradient(135deg,#7c5cff,#e65cff)
+    }
+    .owner-avatar-wrap img{width:100%;height:100%;display:block;object-fit:cover;border-radius:13px}
+    .owner-details{min-width:0;flex:1}
+    .owner-label{font-size:9px;letter-spacing:2px;color:#8175cf;font-weight:900;margin-bottom:3px}
+    .owner-name{font-size:14px;font-weight:900;color:#f3f3f7}
+    .owner-role{font-size:10px;color:#666b7b;margin-top:2px}
+    .owner-facebook{
+      flex:0 0 auto;display:flex;align-items:center;gap:7px;text-decoration:none;
+      color:#d9d5ff;border:1px solid rgba(124,92,255,.22);background:rgba(124,92,255,.08);
+      padding:10px 12px;border-radius:11px;font-size:11px;font-weight:800;transition:.2s
+    }
+    .owner-facebook:hover{background:rgba(124,92,255,.15);border-color:rgba(124,92,255,.4);color:#fff}
+    .fb-icon{
+      width:20px;height:20px;border-radius:6px;display:grid;place-items:center;
+      background:#6756e8;color:#fff;font-size:14px;font-weight:900
+    }
+    @media(max-width:620px){
+      .owner-card{flex-wrap:wrap}
+      .owner-facebook{width:100%;justify-content:center}
+    }
+
+  </style>
+
+
+<style id="aura-admin-runtime-style">
+.admin-announcement{
+  position:relative; z-index:9998; width:100%; padding:10px 16px;
+  text-align:center; font-size:13px; font-weight:700; letter-spacing:.2px;
+  background:linear-gradient(90deg,#6d28d9,#9333ea,#4f46e5); color:#fff;
+  box-shadow:0 8px 30px rgba(76,29,149,.25);
+}
+.admin-maintenance{
+  position:fixed; inset:0; z-index:99999; display:grid; place-items:center;
+  padding:24px; background:rgba(7,5,16,.97); backdrop-filter:blur(18px);
+  color:#fff; text-align:center;
+}
+.admin-maintenance>div{
+  width:min(460px,100%); padding:34px 26px; border:1px solid rgba(255,255,255,.1);
+  border-radius:24px; background:rgba(255,255,255,.04); box-shadow:0 24px 80px rgba(0,0,0,.45);
+}
+.maintenance-icon{font-size:38px;margin-bottom:10px}
+.admin-maintenance h2{margin:0 0 8px;font-size:25px}
+.admin-maintenance p{margin:0;color:#aaa;line-height:1.6}
+</style>
+
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <div class="brand-mark">
+        <img class="avatar" src="https://i.postimg.cc/HLDnhHDX/IMG-3302.jpg" alt="AURA LABIB">
+        <span class="verified">✓</span>
+      </div>
+      <div class="eyebrow">AURA LABIB</div>
+      <h1>Video Downloader</h1>
+      <p class="hero-copy">A fast, focused way to generate video download links from Facebook and TikTok.</p>
+    </header>
+
+    <section class="card">
+      <div class="tabs">
+        <button class="tab active" id="fbTab" onclick="switchPlatform('facebook')"><span>f</span> Facebook</button>
+        <button class="tab" id="ttTab" onclick="switchPlatform('tiktok')"><span>♪</span> TikTok</button>
+      </div>
+
+      <div class="label" id="inputLabel">Video URL</div>
+      <div class="inputrow">
+        <input id="urlInput" type="url" autocomplete="off"
+          placeholder="Paste your Facebook video or Reel link">
+        <button class="clear" onclick="clearInput()" aria-label="Clear">×</button>
+      </div>
+      <button class="action" id="downloadBtn" onclick="downloadVideo()">Generate Download Link</button>
+
+      <div class="status" id="status"></div>
+      <div class="result" id="result"></div>
+    </section>
+
+    <section class="trust-row">
+      <div class="trust-card"><b>HD Quality</b><span>Available quality options</span></div>
+      <div class="trust-card"><b>Fast Processing</b><span>Quick link generation</span></div>
+      <div class="trust-card"><b>Simple & Clean</b><span>Clean and focused</span></div>
+    </section>
+
+
+    <section class="owner-card">
+      <div class="owner-avatar-wrap">
+        <img src="https://i.postimg.cc/HLDnhHDX/IMG-3302.jpg" alt="AURA LABIB">
+      </div>
+      <div class="owner-details">
+        <div class="owner-label">OWNER</div>
+        <div class="owner-name">AURA LABIB</div>
+        <div class="owner-role">Founder & Developer</div>
+      </div>
+      <a class="owner-facebook" href="https://www.facebook.com/millioner.fighter" target="_blank" rel="noopener noreferrer">
+        <span class="fb-icon">f</span>
+        Facebook Profile
+      </a>
+    </section>
+
+    <footer>
+      <strong>AURA LABIB</strong> · Video Downloader<br>
+      Please download only content you are authorized to use.
+    </footer>
+  </main>
+
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAx-HNFJk5-svQtZOuM7FEzS6CIDjyGvjs",
+  authDomain: "aura-labib-downloader.firebaseapp.com",
+  projectId: "aura-labib-downloader",
+  storageBucket: "aura-labib-downloader.firebasestorage.app",
+  messagingSenderId: "12211909607",
+  appId: "1:12211909607:web:cd12bade537ade4d32c342",
+  measurementId: "G-E12L1WBB57"
+};
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+
+const DEFAULTS = {
+  siteName: "AURA LABIB", title: "Video Downloader",
+  description: "A fast, focused way to generate video download links from Facebook and TikTok.",
+  announcement: "", maintenance: false, facebookEnabled: true, tiktokEnabled: true,
+  ownerName: "AURA LABIB", ownerRole: "Founder & Developer",
+  ownerFacebook: "https://www.facebook.com/millioner.fighter",
+  ownerImage: "https://i.postimg.cc/HLDnhHDX/IMG-3302.jpg"
+};
+
+async function loadOnlineSettings() {
+  try {
+    const snap = await getDoc(doc(db, "siteSettings", "public"));
+    window.AURA_ADMIN_SETTINGS = snap.exists() ? Object.assign({}, DEFAULTS, snap.data()) : DEFAULTS;
+  } catch (e) {
+    console.warn("Firebase settings unavailable; using defaults.", e);
+    window.AURA_ADMIN_SETTINGS = DEFAULTS;
+  }
+}
+
+await loadOnlineSettings();
+const settings = window.AURA_ADMIN_SETTINGS;
+
+document.addEventListener("DOMContentLoaded", function(){
+  const setText = (sel, value) => { const el=document.querySelector(sel); if(el && value!=null) el.textContent=value; };
+  const setHref = (sel, value) => { const el=document.querySelector(sel); if(el && value) el.href=value; };
+  setText(".eyebrow", settings.siteName); setText("h1", settings.title);
+  const heroCopy=document.querySelector(".hero-copy"); if(heroCopy) heroCopy.textContent=settings.description;
+  setText(".owner-name", settings.ownerName); setText(".owner-role", settings.ownerRole); setHref(".owner-facebook", settings.ownerFacebook);
+  document.querySelectorAll(".owner-avatar-wrap img").forEach(img=>{if(settings.ownerImage) img.src=settings.ownerImage;});
+  if(settings.announcement){ const bar=document.createElement("div"); bar.className="admin-announcement"; bar.textContent=settings.announcement; document.body.insertBefore(bar,document.body.firstChild); }
+  if(settings.maintenance){ const overlay=document.createElement("div"); overlay.className="admin-maintenance"; overlay.innerHTML='<div><div class="maintenance-icon">⚙</div><h2>Temporarily Unavailable</h2><p>The downloader is currently under maintenance. Please try again later.</p></div>'; document.body.appendChild(overlay); document.documentElement.style.overflow="hidden"; }
+  const fbTab=document.querySelector('[data-platform="facebook"]'), tkTab=document.querySelector('[data-platform="tiktok"]');
+  if(fbTab && !settings.facebookEnabled) fbTab.style.display="none";
+  if(tkTab && !settings.tiktokEnabled) tkTab.style.display="none";
+  if(!settings.facebookEnabled && settings.tiktokEnabled && typeof window.switchPlatform==="function") window.switchPlatform("tiktok");
+});
+</script>
+
+<script>
+/* ============================================================
+   IMPORTANT:
+   1) Create/rotate your RapidAPI key.
+   2) Put the NEW key below.
+   3) Do NOT publish a real RapidAPI key in public frontend code
+      for a production app. Use your own backend/proxy instead.
+   ============================================================ */
+const RAPIDAPI_KEY = "YOUR_NEW_RAPIDAPI_KEY";
+
+const CONFIG = {
+  facebook: {
+    host: "facebook-reel-and-video-downloader.p.rapidapi.com",
+    endpoint: "https://facebook-reel-and-video-downloader.p.rapidapi.com/app/main.php?url="
+  },
+  tiktok: {
+    host: "tiktok-video-downloader-api.p.rapidapi.com",
+    endpoint: "https://tiktok-video-downloader-api.p.rapidapi.com/media?videoUrl="
+  }
+};
+
+let platform = "facebook";
+
+function switchPlatform(name){
+  platform = name;
+  document.getElementById("fbTab").classList.toggle("active", name === "facebook");
+  document.getElementById("ttTab").classList.toggle("active", name === "tiktok");
+
+  const input = document.getElementById("urlInput");
+  const label = document.getElementById("inputLabel");
+
+  if(name === "facebook"){
+    label.textContent = "Video URL";
+    input.placeholder = "Paste your Facebook video or Reel link";
+  }else{
+    label.textContent = "TikTok video URL";
+    input.placeholder = "Paste your TikTok video link";
+  }
+
+  resetResult();
+}
+
+function clearInput(){
+  document.getElementById("urlInput").value = "";
+  resetResult();
+  document.getElementById("urlInput").focus();
+}
+
+function resetResult(){
+  const status = document.getElementById("status");
+  const result = document.getElementById("result");
+  status.className = "status";
+  status.textContent = "";
+  result.className = "result";
+  result.innerHTML = "";
+}
+
+function showStatus(message, type="info"){
+  const el = document.getElementById("status");
+  el.className = "status show " + type;
+  el.innerHTML = message;
+}
+
+function isValidUrl(value){
+  try{
+    const u = new URL(value);
+    return u.protocol === "http:" || u.protocol === "https:";
+  }catch(e){ return false; }
+}
+
+function findUrlsDeep(obj, found=[]){
+  if(obj == null) return found;
+
+  if(typeof obj === "string"){
+    if(/^https?:\\/\\//i.test(obj)) found.push(obj);
+    return found;
+  }
+
+  if(Array.isArray(obj)){
+    obj.forEach(v => findUrlsDeep(v, found));
+    return found;
+  }
+
+  if(typeof obj === "object"){
+    for(const [key, value] of Object.entries(obj)){
+      const k = key.toLowerCase();
+      if(typeof value === "string" && /^https?:\\/\\//i.test(value)){
+        found.push({key:k, url:value});
+      }else{
+        findUrlsDeep(value, found);
+      }
+    }
+  }
+  return found;
+}
+
+function getBestFacebookLinks(data){
+  const priority = ["hd","high","hd_url","hdurl","download","download_url","video","video_url","sd","sd_url","sdurl","low"];
+  const items = findUrlsDeep(data, []);
+  const normalized = items.map(x => typeof x === "string" ? {key:"url",url:x} : x);
+
+  const unique = [];
+  const seen = new Set();
+  normalized.forEach(x => {
+    if(x.url && !seen.has(x.url)){
+      seen.add(x.url);
+      unique.push(x);
+    }
+  });
+
+  unique.sort((a,b) => {
+    const ai = priority.indexOf(a.key);
+    const bi = priority.indexOf(b.key);
+    return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+  });
+
+  return unique;
+}
+
+async function downloadVideo(){
+  resetResult();
+
+  const url = document.getElementById("urlInput").value.trim();
+  const btn = document.getElementById("downloadBtn");
+
+  if(RAPIDAPI_KEY === "YOUR_NEW_RAPIDAPI_KEY"){
+    showStatus("⚠️ আগে <b>RAPIDAPI_KEY</b>-এ আপনার নতুন RapidAPI key বসান। পুরোনো exposed key ব্যবহার না করাই নিরাপদ।","error");
+    return;
+  }
+
+  if(!url){
+    showStatus("Please paste a video URL first.","error");
+    return;
+  }
+
+  if(!isValidUrl(url)){
+    showStatus("Please enter a valid http/https video URL.","error");
+    return;
+  }
+
+  if(platform === "tiktok" && !/tiktok\\.com|vm\\.tiktok\\.com|vt\\.tiktok\\.com/i.test(url)){
+    showStatus("This does not look like a TikTok URL.","error");
+    return;
+  }
+
+  if(platform === "facebook" && !/facebook\\.com|fb\\.watch|m\\.facebook\\.com/i.test(url)){
+    showStatus("This does not look like a Facebook URL.","error");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Preparing Link...';
+  showStatus("Fetching the video download information…","info");
+
+  try{
+    const cfg = CONFIG[platform];
+    const apiUrl = cfg.endpoint + encodeURIComponent(url);
+
+    const response = await fetch(apiUrl,{
+      method:"GET",
+      headers:{
+        "x-rapidapi-key": RAPIDAPI_KEY,
+        "x-rapidapi-host": cfg.host,
+        "Content-Type":"application/json"
+      }
+    });
+
+    const text = await response.text();
+    let data;
+    try{ data = JSON.parse(text); }
+    catch(e){ data = text; }
+
+    if(!response.ok){
+      const msg = typeof data === "object" ? (data.message || data.error || JSON.stringify(data)) : data;
+      throw new Error(msg || `API request failed (${response.status})`);
+    }
+
+    if(platform === "tiktok"){
+      renderTikTokResult(data);
+    }else{
+      renderFacebookResult(data);
+    }
+  }catch(error){
+    console.error(error);
+    showStatus(
+      "❌ <b>Could not get the download link.</b><br>" +
+      escapeHtml(error.message || "Unknown error") +
+      "<br><br>Please verify your API key, subscription, URL, and browser connection.",
+      "error"
+    );
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "Generate Download Link";
+  }
+}
+
+function renderTikTokResult(data){
+  let downloadUrl = null;
+
+  if(typeof data === "object"){
+    downloadUrl =
+      data.downloadUrl ||
+      data.download_url ||
+      data.url ||
+      data.data?.downloadUrl ||
+      data.data?.download_url ||
+      data.data?.url ||
+      data.video?.downloadUrl ||
+      data.video?.download_url ||
+      data.video?.url ||
+      null;
+  }
+
+  if(!downloadUrl && typeof data === "string" && /^https?:\\/\\//i.test(data)){
+    downloadUrl = data;
+  }
+
+  if(!downloadUrl){
+    console.log("TikTok API response:", data);
+    throw new Error("TikTok API returned no downloadUrl.");
+  }
+
+  showResult(
+    "TikTok Video Ready",
+    "Your download link is ready.",
+    downloadUrl,
+    "Download Video"
+  );
+}
+
+function renderFacebookResult(data){
+  const links = getBestFacebookLinks(data);
+  if(!links.length){
+    console.log("Facebook API response:", data);
+    throw new Error("No video/download URL was found in the Facebook API response.");
+  }
+
+  const result = document.getElementById("result");
+  result.className = "result show";
+
+  let html = "<h3>Facebook Video Ready</h3><p>Select an available quality below.</p>";
+
+  const shown = links.slice(0,6);
+  shown.forEach((item,index) => {
+    const label = prettyQuality(item.key, index);
+    html += `<a class="download" style="margin-top:9px" target="_blank" rel="noopener" href="${escapeAttr(item.url)}">${escapeHtml(label)}</a>`;
+  });
+
+  html += `<button class="secondary" onclick="copyLink('${escapeJs(shown[0].url)}')">Copy Download Link</button>`;
+  result.innerHTML = html;
+  showStatus("✅ Download link generated.","info");
+}
+
+function prettyQuality(key,index){
+  const k = String(key || "").toLowerCase();
+  if(k.includes("hd") || k.includes("high")) return "⬇ Download HD";
+  if(k.includes("sd") || k.includes("low")) return "⬇ Download SD";
+  return index === 0 ? "⬇ Download Video" : "⬇ Download Option " + (index+1);
+}
+
+function showResult(title, desc, url, buttonText){
+  const result = document.getElementById("result");
+  result.className = "result show";
+  result.innerHTML = `
+    <h3>${escapeHtml(title)}</h3>
+    <p>${escapeHtml(desc)}</p>
+    <a class="download" target="_blank" rel="noopener" href="${escapeAttr(url)}">${escapeHtml(buttonText)}</a>
+    <button class="secondary" onclick="copyLink('${escapeJs(url)}')">Copy Download Link</button>
+  `;
+  showStatus("✅ Download link generated.","info");
+}
+
+async function copyLink(url){
+  try{
+    await navigator.clipboard.writeText(url);
+    showStatus("✅ Download link copied to clipboard.","info");
+  }catch(e){
+    showStatus("Copy failed. Long-press the download link and copy it manually.","error");
+  }
+}
+
+function escapeHtml(value){
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+function escapeAttr(value){
+  return escapeHtml(value).replace(/`/g,"&#96;");
+}
+function escapeJs(value){
+  return String(value ?? "").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\\n/g," ");
+}
+</script>
+</body>
+</html>
