@@ -293,7 +293,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAx-HNFJk5-svQtZOuM7FEzS6CIDjyGvjs",
@@ -316,33 +316,49 @@ const DEFAULTS = {
   ownerImage: "https://i.postimg.cc/HLDnhHDX/IMG-3302.jpg"
 };
 
-async function loadOnlineSettings() {
-  try {
-    const snap = await getDoc(doc(db, "siteSettings", "public"));
-    window.AURA_ADMIN_SETTINGS = snap.exists() ? Object.assign({}, DEFAULTS, snap.data()) : DEFAULTS;
-  } catch (e) {
-    console.warn("Firebase settings unavailable; using defaults.", e);
-    window.AURA_ADMIN_SETTINGS = DEFAULTS;
+function applySettings(settings){
+  window.AURA_ADMIN_SETTINGS=settings;
+  const setText=(sel,value)=>{const el=document.querySelector(sel);if(el&&value!=null)el.textContent=value;};
+  const setHref=(sel,value)=>{const el=document.querySelector(sel);if(el&&value)el.href=value;};
+  setText(".eyebrow",settings.siteName);
+  setText("h1",settings.title);
+  const heroCopy=document.querySelector(".hero-copy");if(heroCopy)heroCopy.textContent=settings.description;
+  setText(".owner-name",settings.ownerName);
+  setText(".owner-role",settings.ownerRole);
+  setHref(".owner-facebook",settings.ownerFacebook);
+  document.querySelectorAll(".owner-avatar-wrap img").forEach(img=>{if(settings.ownerImage)img.src=settings.ownerImage;});
+  let bar=document.querySelector(".admin-announcement");
+  if(settings.announcement){
+    if(!bar){bar=document.createElement("div");bar.className="admin-announcement";document.body.insertBefore(bar,document.body.firstChild);}
+    bar.textContent=settings.announcement;
+  }else if(bar){bar.remove();}
+  let overlay=document.querySelector(".admin-maintenance");
+  if(settings.maintenance){
+    if(!overlay){
+      overlay=document.createElement("div");overlay.className="admin-maintenance";document.body.appendChild(overlay);
+    }
+    overlay.innerHTML='<div><div class="maintenance-icon">⚙</div><h2>Temporarily Unavailable</h2><p>The downloader is currently under maintenance. Please try again later.</p></div>';
+    document.documentElement.style.overflow="hidden";
+  }else{
+    if(overlay)overlay.remove();
+    document.documentElement.style.overflow="";
   }
+  const fbTab=document.querySelector('[data-platform="facebook"]');
+  const tkTab=document.querySelector('[data-platform="tiktok"]');
+  if(fbTab)fbTab.style.display=settings.facebookEnabled?"":"none";
+  if(tkTab)tkTab.style.display=settings.tiktokEnabled?"":"none";
+  if(!settings.facebookEnabled&&settings.tiktokEnabled&&typeof window.switchPlatform==="function")window.switchPlatform("tiktok");
+  if(settings.facebookEnabled&&typeof window.switchPlatform==="function")window.switchPlatform("facebook");
 }
 
-await loadOnlineSettings();
-const settings = window.AURA_ADMIN_SETTINGS;
-
-document.addEventListener("DOMContentLoaded", function(){
-  const setText = (sel, value) => { const el=document.querySelector(sel); if(el && value!=null) el.textContent=value; };
-  const setHref = (sel, value) => { const el=document.querySelector(sel); if(el && value) el.href=value; };
-  setText(".eyebrow", settings.siteName); setText("h1", settings.title);
-  const heroCopy=document.querySelector(".hero-copy"); if(heroCopy) heroCopy.textContent=settings.description;
-  setText(".owner-name", settings.ownerName); setText(".owner-role", settings.ownerRole); setHref(".owner-facebook", settings.ownerFacebook);
-  document.querySelectorAll(".owner-avatar-wrap img").forEach(img=>{if(settings.ownerImage) img.src=settings.ownerImage;});
-  if(settings.announcement){ const bar=document.createElement("div"); bar.className="admin-announcement"; bar.textContent=settings.announcement; document.body.insertBefore(bar,document.body.firstChild); }
-  if(settings.maintenance){ const overlay=document.createElement("div"); overlay.className="admin-maintenance"; overlay.innerHTML='<div><div class="maintenance-icon">⚙</div><h2>Temporarily Unavailable</h2><p>The downloader is currently under maintenance. Please try again later.</p></div>'; document.body.appendChild(overlay); document.documentElement.style.overflow="hidden"; }
-  const fbTab=document.querySelector('[data-platform="facebook"]'), tkTab=document.querySelector('[data-platform="tiktok"]');
-  if(fbTab && !settings.facebookEnabled) fbTab.style.display="none";
-  if(tkTab && !settings.tiktokEnabled) tkTab.style.display="none";
-  if(!settings.facebookEnabled && settings.tiktokEnabled && typeof window.switchPlatform==="function") window.switchPlatform("tiktok");
-});
+function startLiveSettings(){
+  onSnapshot(doc(db,"siteSettings","public"),(snap)=>{
+    const settings=snap.exists()?Object.assign({},DEFAULTS,snap.data()):DEFAULTS;
+    if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>applySettings(settings),{once:true});
+    else applySettings(settings);
+  },(e)=>console.warn("Firebase live settings unavailable; using defaults.",e));
+}
+startLiveSettings();
 </script>
 
 <script>
