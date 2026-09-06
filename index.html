@@ -246,8 +246,8 @@
 
     <section class="card">
       <div class="tabs">
-        <button class="tab active" id="fbTab" onclick="switchPlatform('facebook')"><span>f</span> Facebook</button>
-        <button class="tab" id="ttTab" onclick="switchPlatform('tiktok')"><span>♪</span> TikTok</button>
+        <button class="tab active" id="fbTab" data-platform="facebook" onclick="switchPlatform('facebook')"><span>f</span> Facebook</button>
+        <button class="tab" id="ttTab" data-platform="tiktok" onclick="switchPlatform('tiktok')"><span>♪</span> TikTok</button>
       </div>
 
       <div class="label" id="inputLabel">Video URL</div>
@@ -353,12 +353,12 @@ document.addEventListener("DOMContentLoaded", function(){
    3) Do NOT publish a real RapidAPI key in public frontend code
       for a production app. Use your own backend/proxy instead.
    ============================================================ */
-const RAPIDAPI_KEY = "YOUR_NEW_RAPIDAPI_KEY";
+const RAPIDAPI_KEY = "b89f06d089msh213f457a6a1659ep1e8f45jsn583d4e855f09";
 
 const CONFIG = {
   facebook: {
-    host: "facebook-reel-and-video-downloader.p.rapidapi.com",
-    endpoint: "https://facebook-reel-and-video-downloader.p.rapidapi.com/app/main.php?url="
+    host: "facebook-videos-reels-downloader.p.rapidapi.com",
+    endpoint: "https://facebook-videos-reels-downloader.p.rapidapi.com/get-video-info?url="
   },
   tiktok: {
     host: "tiktok-video-downloader-api.p.rapidapi.com",
@@ -419,7 +419,7 @@ function findUrlsDeep(obj, found=[]){
   if(obj == null) return found;
 
   if(typeof obj === "string"){
-    if(/^https?:\\/\\//i.test(obj)) found.push(obj);
+    if(/^https?:\/\//i.test(obj)) found.push(obj);
     return found;
   }
 
@@ -431,7 +431,7 @@ function findUrlsDeep(obj, found=[]){
   if(typeof obj === "object"){
     for(const [key, value] of Object.entries(obj)){
       const k = key.toLowerCase();
-      if(typeof value === "string" && /^https?:\\/\\//i.test(value)){
+      if(typeof value === "string" && /^https?:\/\//i.test(value)){
         found.push({key:k, url:value});
       }else{
         findUrlsDeep(value, found);
@@ -485,12 +485,12 @@ async function downloadVideo(){
     return;
   }
 
-  if(platform === "tiktok" && !/tiktok\\.com|vm\\.tiktok\\.com|vt\\.tiktok\\.com/i.test(url)){
+  if(platform === "tiktok" && !/(^|\.)tiktok\.com\b|(^|\.)vm\.tiktok\.com\b|(^|\.)vt\.tiktok\.com\b/i.test(url)){
     showStatus("This does not look like a TikTok URL.","error");
     return;
   }
 
-  if(platform === "facebook" && !/facebook\\.com|fb\\.watch|m\\.facebook\\.com/i.test(url)){
+  if(platform === "facebook" && !/(^|\.)facebook\.com\b|(^|\.)fb\.watch\b|(^|\.)fb\.com\b/i.test(url)){
     showStatus("This does not look like a Facebook URL.","error");
     return;
   }
@@ -503,14 +503,23 @@ async function downloadVideo(){
     const cfg = CONFIG[platform];
     const apiUrl = cfg.endpoint + encodeURIComponent(url);
 
-    const response = await fetch(apiUrl,{
-      method:"GET",
-      headers:{
-        "x-rapidapi-key": RAPIDAPI_KEY,
-        "x-rapidapi-host": cfg.host,
-        "Content-Type":"application/json"
-      }
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    let response;
+    try {
+      response = await fetch(apiUrl,{
+        method:"GET",
+        headers:{
+          "x-rapidapi-key": RAPIDAPI_KEY,
+          "x-rapidapi-host": cfg.host,
+          "Content-Type":"application/json",
+          "Accept":"application/json"
+        },
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
     const text = await response.text();
     let data;
@@ -529,10 +538,11 @@ async function downloadVideo(){
     }
   }catch(error){
     console.error(error);
+    const friendly = error?.name === "AbortError" ? "The API request timed out. Please try again." : (error?.message || "Unknown error");
     showStatus(
       "❌ <b>Could not get the download link.</b><br>" +
-      escapeHtml(error.message || "Unknown error") +
-      "<br><br>Please verify your API key, subscription, URL, and browser connection.",
+      escapeHtml(friendly) +
+      "<br><br>Please verify your RapidAPI key, API subscription, URL, and browser connection.",
       "error"
     );
   }finally{
@@ -558,7 +568,7 @@ function renderTikTokResult(data){
       null;
   }
 
-  if(!downloadUrl && typeof data === "string" && /^https?:\\/\\//i.test(data)){
+  if(!downloadUrl && typeof data === "string" && /^https?:\/\//i.test(data)){
     downloadUrl = data;
   }
 
@@ -635,7 +645,7 @@ function escapeAttr(value){
   return escapeHtml(value).replace(/`/g,"&#96;");
 }
 function escapeJs(value){
-  return String(value ?? "").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\\n/g," ");
+  return String(value ?? "").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\r?\n/g," ");
 }
 </script>
 </body>
