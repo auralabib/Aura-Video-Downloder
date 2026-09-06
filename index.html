@@ -212,11 +212,32 @@
 
 <style id="aura-admin-runtime-style">
 .admin-announcement{
-  position:relative; z-index:9998; width:100%; padding:10px 16px;
-  text-align:center; font-size:13px; font-weight:700; letter-spacing:.2px;
-  background:linear-gradient(90deg,#6d28d9,#9333ea,#4f46e5); color:#fff;
-  box-shadow:0 8px 30px rgba(76,29,149,.25);
+  position:relative; z-index:9998; width:100%; min-height:46px; padding:10px 48px 10px 18px;
+  display:flex; align-items:center; justify-content:center; text-align:center;
+  font-size:13px; font-weight:800; letter-spacing:.2px; line-height:1.45;
+  background:linear-gradient(110deg,#5b21b6,#7c3aed,#c026d3,#4f46e5,#5b21b6);
+  background-size:300% 100%; animation:auraAnnouncementGradient 7s ease infinite;
+  color:#fff; box-shadow:0 8px 30px rgba(76,29,149,.30);
+  overflow:hidden;
 }
+.admin-announcement:before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(110deg,transparent 20%,rgba(255,255,255,.16) 45%,transparent 70%);
+  transform:translateX(-100%); animation:auraAnnouncementShine 4.5s ease-in-out infinite;
+}
+.admin-announcement-text{position:relative;z-index:1;max-width:900px;padding:0 8px}
+.admin-announcement-close{
+  position:absolute; z-index:2; right:12px; top:50%; transform:translateY(-50%);
+  width:28px; height:28px; border-radius:50%; border:1px solid rgba(255,255,255,.28);
+  background:rgba(0,0,0,.18); color:#fff; font-size:19px; line-height:1;
+  display:grid; place-items:center; cursor:pointer; transition:.2s;
+}
+.admin-announcement-close:hover{background:rgba(0,0,0,.35);transform:translateY(-50%) scale(1.06)}
+.admin-announcement.is-closing{animation:auraAnnouncementOut .25s ease forwards}
+@keyframes auraAnnouncementGradient{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes auraAnnouncementShine{0%{transform:translateX(-120%)}45%,100%{transform:translateX(120%)}}
+@keyframes auraAnnouncementOut{to{opacity:0;transform:translateY(-8px);max-height:0;min-height:0;padding-top:0;padding-bottom:0}}
+@media(max-width:620px){.admin-announcement{font-size:12px;padding-left:14px;padding-right:48px;min-height:44px}.admin-announcement-close{right:9px;width:26px;height:26px}}
 .admin-maintenance{
   position:fixed; inset:0; z-index:99999; display:grid; place-items:center;
   padding:24px; background:rgba(7,5,16,.97); backdrop-filter:blur(18px);
@@ -329,9 +350,23 @@ function applySettings(settings){
   document.querySelectorAll(".owner-avatar-wrap img").forEach(img=>{if(settings.ownerImage)img.src=settings.ownerImage;});
   let bar=document.querySelector(".admin-announcement");
   if(settings.announcement){
-    if(!bar){bar=document.createElement("div");bar.className="admin-announcement";document.body.insertBefore(bar,document.body.firstChild);}
-    bar.textContent=settings.announcement;
-  }else if(bar){bar.remove();}
+    const message=String(settings.announcement).trim();
+    const dismissed=sessionStorage.getItem("AURA_ANNOUNCEMENT_DISMISSED");
+    if(dismissed!==message){
+      if(!bar){
+        bar=document.createElement("div");
+        bar.className="admin-announcement";
+        bar.innerHTML='<span class="admin-announcement-text"></span><button class="admin-announcement-close" type="button" aria-label="Close announcement">×</button>';
+        document.body.insertBefore(bar,document.body.firstChild);
+        bar.querySelector(".admin-announcement-close").addEventListener("click",()=>{
+          sessionStorage.setItem("AURA_ANNOUNCEMENT_DISMISSED",message);
+          bar.classList.add("is-closing");
+          setTimeout(()=>{if(bar)bar.remove();},260);
+        });
+      }
+      bar.querySelector(".admin-announcement-text").textContent=message;
+    }else if(bar){bar.remove();}
+  }else if(bar){bar.remove(); sessionStorage.removeItem("AURA_ANNOUNCEMENT_DISMISSED");}
   let overlay=document.querySelector(".admin-maintenance");
   if(settings.maintenance){
     if(!overlay){
