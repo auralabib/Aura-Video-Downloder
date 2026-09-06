@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AURA LABIB — Admin Panel</title>
+<meta name="theme-color" content="#0b0813">
+<style>
+*{box-sizing:border-box}
+:root{--bg:#07060b;--panel:#111019;--panel2:#171521;--line:rgba(255,255,255,.09);--text:#f7f4ff;--muted:#9c98aa;--purple:#8b5cf6;--pink:#c026d3;--green:#34d399;--red:#fb7185}
+body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:
+radial-gradient(circle at 15% 0%,rgba(124,58,237,.22),transparent 32%),
+radial-gradient(circle at 100% 20%,rgba(192,38,211,.13),transparent 28%),var(--bg);color:var(--text);min-height:100vh}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+.app{display:flex;min-height:100vh}
+.sidebar{width:255px;padding:22px 16px;border-right:1px solid var(--line);background:rgba(8,7,13,.8);backdrop-filter:blur(18px);position:sticky;top:0;height:100vh}
+.brand{display:flex;gap:12px;align-items:center;padding:8px 10px 28px}
+.logo{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#7c3aed,#c026d3);font-weight:900}
+.brand strong{font-size:15px}.brand small{display:block;color:var(--muted);margin-top:2px}
+.nav{display:grid;gap:7px}.nav button{border:1px solid transparent;background:transparent;color:#aaa6b7;text-align:left;padding:12px 13px;border-radius:12px;font-weight:700}.nav button.active,.nav button:hover{background:rgba(139,92,246,.13);border-color:rgba(139,92,246,.2);color:#fff}
+.sidebar-footer{position:absolute;bottom:18px;left:18px;right:18px;color:#777286;font-size:11px;line-height:1.6}
+.main{flex:1;padding:28px;max-width:1250px;margin:auto;width:100%}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:25px}.topbar h1{font-size:28px;margin:0}.topbar p{margin:5px 0 0;color:var(--muted);font-size:13px}
+.preview{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.035);font-size:12px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:20px}
+.stat{padding:18px;border:1px solid var(--line);background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.02));border-radius:18px}.stat small{color:var(--muted)}.stat strong{display:block;font-size:24px;margin-top:8px}.stat span{font-size:11px;color:#777286}
+.card{background:rgba(16,15,24,.82);border:1px solid var(--line);border-radius:20px;padding:22px;margin-bottom:18px;box-shadow:0 18px 60px rgba(0,0,0,.2)}
+.card h2{margin:0 0 4px;font-size:18px}.card .sub{color:var(--muted);font-size:12px;margin-bottom:18px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.field{display:grid;gap:7px}.field.full{grid-column:1/-1}.field label{font-size:12px;color:#b7b2c2;font-weight:700}.field input,.field textarea{width:100%;border:1px solid var(--line);outline:none;background:#0b0a10;color:#fff;border-radius:12px;padding:12px 13px}.field textarea{min-height:95px;resize:vertical}.field input:focus,.field textarea:focus{border-color:rgba(139,92,246,.65);box-shadow:0 0 0 3px rgba(139,92,246,.1)}
+.switches{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.025)}.switch b{font-size:13px}.switch small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+.toggle{width:48px;height:27px;border-radius:99px;background:#2a2733;border:0;padding:3px;position:relative;flex:0 0 auto}.toggle:after{content:"";display:block;width:21px;height:21px;border-radius:50%;background:#aaa;transition:.2s}.toggle.on{background:linear-gradient(90deg,#7c3aed,#c026d3)}.toggle.on:after{transform:translateX(21px);background:#fff}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.btn{border:1px solid var(--line);background:#17151f;color:#fff;padding:11px 15px;border-radius:11px;font-weight:800}.btn.primary{border:0;background:linear-gradient(90deg,#7c3aed,#c026d3);box-shadow:0 10px 30px rgba(124,58,237,.25)}.btn.danger{color:#ff9aaa}
+.notice{padding:12px 14px;border-radius:12px;background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.15);color:#b7f7de;font-size:12px;margin-top:15px;line-height:1.5}
+.hidden{display:none!important}
+.login{min-height:100vh;display:grid;place-items:center;padding:20px}.login-card{width:min(430px,100%);padding:30px;border-radius:24px;background:rgba(17,16,25,.9);border:1px solid var(--line);box-shadow:0 30px 100px rgba(0,0,0,.45)}.login-card h1{margin:0 0 7px}.login-card p{color:var(--muted);font-size:13px;line-height:1.5}.login-card input{width:100%;padding:13px;margin:7px 0;border-radius:12px;border:1px solid var(--line);background:#0b0a10;color:#fff;outline:none}.login-card .btn{width:100%;margin-top:10px}
+.toast{position:fixed;right:20px;bottom:20px;padding:12px 16px;background:#17151f;border:1px solid var(--line);border-radius:12px;box-shadow:0 15px 50px rgba(0,0,0,.4);font-size:13px;opacity:0;transform:translateY(10px);pointer-events:none;transition:.25s}.toast.show{opacity:1;transform:none}
+@media(max-width:800px){.app{display:block}.sidebar{width:100%;height:auto;position:relative;border-right:0;border-bottom:1px solid var(--line);padding:12px}.brand{padding:5px 8px 12px}.sidebar-footer{display:none}.nav{grid-template-columns:repeat(4,1fr)}.nav button{font-size:11px;text-align:center;padding:9px 5px}.main{padding:18px 13px}.grid{grid-template-columns:1fr}.form-grid,.switches{grid-template-columns:1fr}.field.full{grid-column:auto}.topbar{align-items:flex-start}.preview{display:none}}
+</style>
+</head>
+<body>
+<div id="loginView" class="login">
+  <div class="login-card">
+    <div class="logo">AL</div>
+    <h1>Admin Control Center</h1>
+    <p>Secure online admin panel powered by Firebase Authentication + Firestore. Sign in with your admin account to control the live downloader.</p>
+    <input id="email" type="email" autocomplete="username" placeholder="Admin email">
+    <input id="password" type="password" autocomplete="current-password" placeholder="Password">
+    <button class="btn primary" onclick="login()">Sign In</button>
+    <div class="notice">Use the Firebase Authentication account you created for this admin panel.</div>
+  </div>
+</div>
+
+<div id="appView" class="app hidden">
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">AL</div><div><strong>AURA LABIB</strong><small>Admin Control Center</small></div></div>
+    <div class="nav">
+      <button class="active" onclick="tab('dashboard',this)">Dashboard</button>
+      <button onclick="tab('site',this)">Site</button>
+      <button onclick="tab('platforms',this)">Platforms</button>
+      <button onclick="tab('owner',this)">Owner</button>
+    </div>
+    <div class="sidebar-footer">AURA LABIB · Video Downloader<br>Admin v2.0 · Firebase online</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div><h1 id="pageTitle">Dashboard</h1><p>Control your downloader experience.</p></div>
+      <div style="display:flex;gap:10px;align-items:center"><div class="preview"><span class="dot"></span> Firebase online</div><button class="btn" onclick="logout()">Sign Out</button></div>
+    </div>
+
+    <section id="dashboard" class="section">
+      <div class="grid">
+        <div class="stat"><small>Site Status</small><strong id="statStatus">Online</strong><span>Controlled by maintenance switch</span></div>
+        <div class="stat"><small>Facebook</small><strong id="statFb">Enabled</strong><span>Downloader platform</span></div>
+        <div class="stat"><small>TikTok</small><strong id="statTk">Enabled</strong><span>Downloader platform</span></div>
+      </div>
+      <div class="card">
+        <h2>Quick Controls</h2><div class="sub">Turn the public downloader on/off and manage platforms.</div>
+        <div class="switches">
+          <div class="switch"><div><b>Maintenance Mode</b><small>Temporarily disable site</small></div><button id="maintenanceToggle" class="toggle" onclick="toggle('maintenance')"></button></div>
+          <div class="switch"><div><b>Facebook</b><small>Show Facebook tab</small></div><button id="fbToggle" class="toggle" onclick="toggle('facebookEnabled')"></button></div>
+          <div class="switch"><div><b>TikTok</b><small>Show TikTok tab</small></div><button id="tkToggle" class="toggle" onclick="toggle('tiktokEnabled')"></button></div>
+        </div>
+        <div class="actions"><button class="btn primary" onclick="save()">Save Changes</button><button class="btn danger" onclick="resetSettings()">Reset Settings</button></div>
+      </div>
+    </section>
+
+    <section id="site" class="section hidden">
+      <div class="card">
+        <h2>Website Settings</h2><div class="sub">Edit the visible branding and hero text.</div>
+        <div class="form-grid">
+          <div class="field"><label>Site Name</label><input id="siteName"></div>
+          <div class="field"><label>Main Title</label><input id="title"></div>
+          <div class="field full"><label>Description</label><textarea id="description"></textarea></div>
+          <div class="field full"><label>Announcement Bar <span style="color:#777">(optional)</span></label><input id="announcement" placeholder="Example: New update is live!"></div>
+        </div>
+        <div class="actions"><button class="btn primary" onclick="save()">Save Site Settings</button></div>
+      </div>
+    </section>
+
+    <section id="platforms" class="section hidden">
+      <div class="card">
+        <h2>Platform Controls</h2><div class="sub">Choose which downloader tabs visitors can use.</div>
+        <div class="switches">
+          <div class="switch"><div><b>Facebook Downloader</b><small>Enable/disable Facebook tab</small></div><button id="fbToggle2" class="toggle" onclick="toggle('facebookEnabled')"></button></div>
+          <div class="switch"><div><b>TikTok Downloader</b><small>Enable/disable TikTok tab</small></div><button id="tkToggle2" class="toggle" onclick="toggle('tiktokEnabled')"></button></div>
+          <div class="switch"><div><b>Maintenance</b><small>Show maintenance screen</small></div><button id="maintenanceToggle2" class="toggle" onclick="toggle('maintenance')"></button></div>
+        </div>
+        <div class="notice">API credentials are intentionally not exposed in this panel. Keep RapidAPI keys server-side when you move to production.</div>
+      </div>
+    </section>
+
+    <section id="owner" class="section hidden">
+      <div class="card">
+        <h2>Owner Profile</h2><div class="sub">Update the owner card shown at the bottom of the downloader.</div>
+        <div class="form-grid">
+          <div class="field"><label>Owner Name</label><input id="ownerName"></div>
+          <div class="field"><label>Role</label><input id="ownerRole"></div>
+          <div class="field full"><label>Facebook Profile URL</label><input id="ownerFacebook"></div>
+          <div class="field full"><label>Profile Image URL</label><input id="ownerImage"></div>
+        </div>
+        <div class="actions"><button class="btn primary" onclick="save()">Save Owner Profile</button></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div id="toast" class="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAx-HNFJk5-svQtZOuM7FEzS6CIDjyGvjs",
+  authDomain: "aura-labib-downloader.firebaseapp.com",
+  projectId: "aura-labib-downloader",
+  storageBucket: "aura-labib-downloader.firebasestorage.app",
+  messagingSenderId: "12211909607",
+  appId: "1:12211909607:web:cd12bade537ade4d32c342",
+  measurementId: "G-E12L1WBB57"
+};
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+const ADMIN_EMAIL="aura1@gmail.com";
+const KEY="AURA_LABIB_ADMIN_SETTINGS";
+const defaults={siteName:"AURA LABIB",title:"Video Downloader",description:"A fast, focused way to generate video download links from Facebook and TikTok.",announcement:"",maintenance:false,facebookEnabled:true,tiktokEnabled:true,ownerName:"AURA LABIB",ownerRole:"Founder & Developer",ownerFacebook:"https://www.facebook.com/millioner.fighter",ownerImage:"https://i.postimg.cc/HLDnhHDX/IMG-3302.jpg"};
+let s=Object.assign({},defaults);
+
+async function load(){
+  try{ const snap=await getDoc(doc(db,"siteSettings","public")); if(snap.exists()) s=Object.assign({},defaults,snap.data()); }catch(e){ console.error(e); toast("Could not load online settings"); }
+  ["siteName","title","description","announcement","ownerName","ownerRole","ownerFacebook","ownerImage"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=s[id]??"";});
+  setToggle("maintenance",s.maintenance);setToggle("facebookEnabled",s.facebookEnabled);setToggle("tiktokEnabled",s.tiktokEnabled);stats();
+}
+function stats(){document.getElementById("statStatus").textContent=s.maintenance?"Maintenance":"Online";document.getElementById("statFb").textContent=s.facebookEnabled?"Enabled":"Disabled";document.getElementById("statTk").textContent=s.tiktokEnabled?"Enabled":"Disabled";}
+function setToggle(key,val){["Toggle","Toggle2"].forEach(suf=>{const el=document.getElementById(key==="facebookEnabled"?"fbToggle"+suf:key==="tiktokEnabled"?"tkToggle"+suf:"maintenanceToggle"+suf);if(el)el.classList.toggle("on",!!val);})}
+function toggle(key){s[key]=!s[key];setToggle(key,s[key]);stats();}
+async function save(){
+  const user=auth.currentUser; if(!user || user.email!==ADMIN_EMAIL){toast("Admin authentication required");return;}
+  ["siteName","title","description","announcement","ownerName","ownerRole","ownerFacebook","ownerImage"].forEach(id=>s[id]=document.getElementById(id).value.trim());
+  try{ await setDoc(doc(db,"siteSettings","public"),s,{merge:true}); localStorage.setItem(KEY,JSON.stringify(s)); load(); toast("Online settings saved successfully"); }catch(e){console.error(e);toast("Save failed. Check Firestore Rules.");}
+}
+async function resetSettings(){if(!confirm("Reset all admin settings?"))return; const user=auth.currentUser;if(!user||user.email!==ADMIN_EMAIL)return; try{await setDoc(doc(db,"siteSettings","public"),defaults);s=Object.assign({},defaults);load();toast("Settings reset online");}catch(e){toast("Reset failed");}}
+async function login(){
+ const email=document.getElementById("email").value.trim(); const password=document.getElementById("password").value;
+ if(!email||!password){toast("Enter email and password");return;}
+ try{await signInWithEmailAndPassword(auth,email,password);}catch(e){console.error(e);toast("Login failed: check email/password");}
+}
+function logout(){signOut(auth);}
+function showApp(){document.getElementById("loginView").classList.add("hidden");document.getElementById("appView").classList.remove("hidden");load();}
+function showLogin(){document.getElementById("loginView").classList.remove("hidden");document.getElementById("appView").classList.add("hidden");}
+function tab(id,btn){document.querySelectorAll(".section").forEach(x=>x.classList.add("hidden"));document.getElementById(id).classList.remove("hidden");document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));btn.classList.add("active");document.getElementById("pageTitle").textContent=btn.textContent;}
+function toast(t){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2400);}
+window.login=login;window.logout=logout;window.save=save;window.resetSettings=resetSettings;window.toggle=toggle;window.tab=tab;
+onAuthStateChanged(auth,user=>{ if(user && user.email===ADMIN_EMAIL) showApp(); else {if(user) signOut(auth);showLogin();} });
+</script>
+</body>
+</html>
