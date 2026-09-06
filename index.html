@@ -347,24 +347,12 @@ document.addEventListener("DOMContentLoaded", function(){
 
 <script>
 /* ============================================================
-   IMPORTANT:
-   1) Create/rotate your RapidAPI key.
-   2) Put the NEW key below.
-   3) Do NOT publish a real RapidAPI key in public frontend code
-      for a production app. Use your own backend/proxy instead.
+   PUBLIC DOWNLOADER API
+   No RapidAPI key or subscription required.
+   Uses @satorufx/mediadownloader -> api.satoru.click
+   for supported public social-media URLs.
    ============================================================ */
-const RAPIDAPI_KEY = "b89f06d089msh213f457a6a1659ep1e8f45jsn583d4e855f09";
-
-const CONFIG = {
-  facebook: {
-    host: "facebook-videos-reels-downloader.p.rapidapi.com",
-    endpoint: "https://facebook-videos-reels-downloader.p.rapidapi.com/get-video-info?url="
-  },
-  tiktok: {
-    host: "tiktok-video-downloader-api.p.rapidapi.com",
-    endpoint: "https://tiktok-video-downloader-api.p.rapidapi.com/media?videoUrl="
-  }
-};
+const PUBLIC_DOWNLOADER_PACKAGE = "https://esm.sh/@satorufx/mediadownloader@1.1.0";
 
 let platform = "facebook";
 
@@ -470,11 +458,6 @@ async function downloadVideo(){
   const url = document.getElementById("urlInput").value.trim();
   const btn = document.getElementById("downloadBtn");
 
-  if(RAPIDAPI_KEY === "YOUR_NEW_RAPIDAPI_KEY"){
-    showStatus("⚠️ আগে <b>RAPIDAPI_KEY</b>-এ আপনার নতুন RapidAPI key বসান। পুরোনো exposed key ব্যবহার না করাই নিরাপদ।","error");
-    return;
-  }
-
   if(!url){
     showStatus("Please paste a video URL first.","error");
     return;
@@ -500,49 +483,49 @@ async function downloadVideo(){
   showStatus("Fetching the video download information…","info");
 
   try{
-    const cfg = CONFIG[platform];
-    const apiUrl = cfg.endpoint + encodeURIComponent(url);
+    // Public, key-free API client. It supports TikTok and Facebook among
+    // many other public social-media URLs and returns a normalized result.
+    const { download } = await import(PUBLIC_DOWNLOADER_PACKAGE);
+    const data = await download(url, {
+      quality: "best",
+      resolve: true,
+      timeout: 60000
+    });
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
-    let response;
-    try {
-      response = await fetch(apiUrl,{
-        method:"GET",
-        headers:{
-          "x-rapidapi-key": RAPIDAPI_KEY,
-          "x-rapidapi-host": cfg.host,
-          "Content-Type":"application/json",
-          "Accept":"application/json"
-        },
-        signal: controller.signal
-      });
-    } finally {
-      clearTimeout(timeout);
+    if(!data || data.ok === false){
+      throw new Error(data?.error || "The public downloader API could not process this URL.");
     }
 
-    const text = await response.text();
-    let data;
-    try{ data = JSON.parse(text); }
-    catch(e){ data = text; }
+    const downloadUrl = data.video || data.media?.find(m => m && m.type === "video" && m.url)?.url;
 
-    if(!response.ok){
-      const msg = typeof data === "object" ? (data.message || data.error || JSON.stringify(data)) : data;
-      throw new Error(msg || `API request failed (${response.status})`);
+    if(!downloadUrl){
+      console.log("Public downloader response:", data);
+      throw new Error("No video download URL was returned for this public video.");
     }
 
-    if(platform === "tiktok"){
-      renderTikTokResult(data);
-    }else{
-      renderFacebookResult(data);
-    }
+    const title = platform === "tiktok" ? "TikTok Video Ready" : "Facebook Video Ready";
+    showResult(
+      title,
+      "Your download link is ready.",
+      downloadUrl,
+      "Download Video"
+    );
   }catch(error){
     console.error(error);
-    const friendly = error?.name === "AbortError" ? "The API request timed out. Please try again." : (error?.message || "Unknown error");
+    let friendly = error?.message || "Unknown error";
+
+    if(error?.code === "RATE_LIMITED" || /rate.?limit|429/i.test(friendly)){
+      friendly = "The free public API is temporarily rate-limited. Please wait a little and try again.";
+    }else if(error?.code === "TIMEOUT" || /timeout/i.test(friendly)){
+      friendly = "The video took too long to process. Please try again.";
+    }else if(error?.code === "NO_MEDIA" || /no media|no.*download/i.test(friendly)){
+      friendly = "No downloadable video was found. Make sure the post is public and the link is valid.";
+    }
+
     showStatus(
       "❌ <b>Could not get the download link.</b><br>" +
       escapeHtml(friendly) +
-      "<br><br>Please verify your RapidAPI key, API subscription, URL, and browser connection.",
+      "<br><br>Only public/accessible videos are supported.",
       "error"
     );
   }finally{
