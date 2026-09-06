@@ -108,6 +108,7 @@ button{cursor:pointer}
           <div class="switch"><div><b>TikTok Downloader</b><small>Enable/disable TikTok tab</small></div><button id="tkToggle2" class="toggle" onclick="toggle('tiktokEnabled')"></button></div>
           <div class="switch"><div><b>Maintenance</b><small>Show maintenance screen</small></div><button id="maintenanceToggle2" class="toggle" onclick="toggle('maintenance')"></button></div>
         </div>
+        <div class="actions"><button class="btn primary" onclick="save()">Save Platform Settings</button></div>
         <div class="notice">API credentials are intentionally not exposed in this panel. Keep RapidAPI keys server-side when you move to production.</div>
       </div>
     </section>
@@ -151,17 +152,53 @@ const defaults={siteName:"AURA LABIB",title:"Video Downloader",description:"A fa
 let s=Object.assign({},defaults);
 
 async function load(){
-  try{ const snap=await getDoc(doc(db,"siteSettings","public")); if(snap.exists()) s=Object.assign({},defaults,snap.data()); }catch(e){ console.error(e); toast("Could not load online settings"); }
-  ["siteName","title","description","announcement","ownerName","ownerRole","ownerFacebook","ownerImage"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=s[id]??"";});
-  setToggle("maintenance",s.maintenance);setToggle("facebookEnabled",s.facebookEnabled);setToggle("tiktokEnabled",s.tiktokEnabled);stats();
+  try{
+    const snap=await getDoc(doc(db,"siteSettings","public"));
+    if(snap.exists()) s=Object.assign({},defaults,snap.data());
+    applyUI();
+  }catch(e){
+    console.error(e);
+    toast("Could not load online settings");
+    applyUI();
+  }
 }
-function stats(){document.getElementById("statStatus").textContent=s.maintenance?"Maintenance":"Online";document.getElementById("statFb").textContent=s.facebookEnabled?"Enabled":"Disabled";document.getElementById("statTk").textContent=s.tiktokEnabled?"Enabled":"Disabled";}
-function setToggle(key,val){["Toggle","Toggle2"].forEach(suf=>{const el=document.getElementById(key==="facebookEnabled"?"fbToggle"+suf:key==="tiktokEnabled"?"tkToggle"+suf:"maintenanceToggle"+suf);if(el)el.classList.toggle("on",!!val);})}
-function toggle(key){s[key]=!s[key];setToggle(key,s[key]);stats();}
+function applyUI(){
+  ["siteName","title","description","announcement","ownerName","ownerRole","ownerFacebook","ownerImage"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=s[id]??"";});
+  setToggle("maintenance",!!s.maintenance);
+  setToggle("facebookEnabled",!!s.facebookEnabled);
+  setToggle("tiktokEnabled",!!s.tiktokEnabled);
+  stats();
+}
+function stats(){
+  document.getElementById("statStatus").textContent=s.maintenance?"Maintenance":"Online";
+  document.getElementById("statFb").textContent=s.facebookEnabled?"Enabled":"Disabled";
+  document.getElementById("statTk").textContent=s.tiktokEnabled?"Enabled":"Disabled";
+}
+function setToggle(key,val){
+  const ids = key==="facebookEnabled" ? ["fbToggle","fbToggle2"] : key==="tiktokEnabled" ? ["tkToggle","tkToggle2"] : ["maintenanceToggle","maintenanceToggle2"];
+  ids.forEach(id=>{const el=document.getElementById(id);if(el){el.classList.toggle("on",!!val);el.setAttribute("aria-pressed",!!val);}});
+}
+function toggle(key){
+  s[key]=!Boolean(s[key]);
+  setToggle(key,s[key]);
+  stats();
+}
 async function save(){
-  const user=auth.currentUser; if(!user || user.email!==ADMIN_EMAIL){toast("Admin authentication required");return;}
-  ["siteName","title","description","announcement","ownerName","ownerRole","ownerFacebook","ownerImage"].forEach(id=>s[id]=document.getElementById(id).value.trim());
-  try{ await setDoc(doc(db,"siteSettings","public"),s,{merge:true}); localStorage.setItem(KEY,JSON.stringify(s)); load(); toast("Online settings saved successfully"); }catch(e){console.error(e);toast("Save failed. Check Firestore Rules.");}
+  const user=auth.currentUser;
+  if(!user || user.email!==ADMIN_EMAIL){toast("Admin authentication required");return;}
+  ["siteName","title","description","announcement","ownerName","ownerRole","ownerFacebook","ownerImage"].forEach(id=>{const el=document.getElementById(id);if(el)s[id]=el.value.trim();});
+  const buttons=document.querySelectorAll("button");
+  buttons.forEach(b=>{if(b.textContent.includes("Save")) b.disabled=true;});
+  try{
+    await setDoc(doc(db,"siteSettings","public"),s,{merge:true});
+    applyUI();
+    toast("✓ Saved online — live site updated");
+  }catch(e){
+    console.error(e);
+    toast("Save failed: "+(e.code||"check Firestore Rules"));
+  }finally{
+    buttons.forEach(b=>{if(b.textContent.includes("Save")) b.disabled=false;});
+  }
 }
 async function resetSettings(){if(!confirm("Reset all admin settings?"))return; const user=auth.currentUser;if(!user||user.email!==ADMIN_EMAIL)return; try{await setDoc(doc(db,"siteSettings","public"),defaults);s=Object.assign({},defaults);load();toast("Settings reset online");}catch(e){toast("Reset failed");}}
 async function login(){
